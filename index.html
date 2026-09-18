@@ -99,7 +99,8 @@
 
         <section id="play-area" class="text-center flex flex-col items-center min-h-[220px] justify-center relative">
             <h2 class="text-sm font-semibold tracking-wide text-pink-400 uppercase mb-2">แปลเป็นภาษาจีน</h2>
-            <div id="meaning-display" class="text-2xl md:text-3xl font-bold text-slate-700 mb-6 min-h-[40px] transition-all duration-300">
+            <!-- ลบ class transition-all duration-300 ออก เพื่อป้องกันภาพข้อความซ้อนทับกันใน Safari -->
+            <div id="meaning-display" class="text-2xl md:text-3xl font-bold text-slate-700 mb-6 min-h-[40px]">
                 กำลังโหลด...
             </div>
             
@@ -116,7 +117,7 @@
                 </button>
             </form>
 
-            <div id="feedback" class="mt-4 min-h-[24px] text-sm font-medium transition-opacity duration-300 opacity-0">
+            <div id="feedback" class="mt-4 min-h-[24px] text-sm font-medium transition-opacity duration-200 opacity-0">
                 <!-- Feedback messages will appear here -->
             </div>
         </section>
@@ -184,8 +185,8 @@
         let vocabQueue = [];
         let score = 0;
         let currentWord = null;
-        let hasFailedCurrentWord = false; // จำว่าคำปัจจุบันเคยตอบผิดหรือไม่
-        let isProcessing = false; // ป้องกันการกด submit รัวๆ
+        let hasFailedCurrentWord = false; 
+        let isProcessing = false; 
 
         const wordsLeftEl = document.getElementById('words-left');
         const scoreDisplayEl = document.getElementById('score-display');
@@ -236,30 +237,24 @@
 
             currentWord = vocabQueue[0];
             hasFailedCurrentWord = false;
-            
             updateStats();
             
-            meaningDisplayEl.style.opacity = 0;
-            setTimeout(() => {
-                meaningDisplayEl.innerText = currentWord.th;
-                meaningDisplayEl.style.opacity = 1;
-            }, 150);
+            // ล้างข้อความเก่าและอัปเดตใหม่ทันที ไม่มีดีเลย์ ไม่มีแอนิเมชั่น ช่วยแก้ปัญหาภาพซ้อน 100%
+            feedbackEl.style.opacity = 0;
+            feedbackEl.innerHTML = ''; 
+            meaningDisplayEl.innerText = currentWord.th;
             
             answerInputEl.value = '';
             answerInputEl.disabled = false;
             answerInputEl.classList.remove('bg-pink-50', 'border-pink-300', 'text-pink-700', 'bg-emerald-50', 'border-emerald-300');
             
             answerInputEl.focus();
-            feedbackEl.style.opacity = 0;
-            
-            // ปลดล็อคระบบหลังโหลดเสร็จ
             isProcessing = false; 
         }
 
         answerFormEl.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // ป้องกันการทำงานซ้อนทับกัน
             if (isProcessing) return; 
 
             const userAnswer = answerInputEl.value.trim();
@@ -268,18 +263,15 @@
             const submitBtn = answerFormEl.querySelector('button[type="submit"]');
 
             if (userAnswer === currentWord.ch) {
-                // กรณีตอบถูก
                 isProcessing = true;
                 answerInputEl.disabled = true;
                 submitBtn.disabled = true;
 
                 if (!hasFailedCurrentWord) {
-                    // ถูกตั้งแต่รอบแรก
                     score += 10;
                     vocabQueue.shift(); 
                     feedbackEl.innerHTML = `<span class="text-emerald-500">ถูกต้อง! 🎉 (${currentWord.pinyin})</span>`;
                 } else {
-                    // ตอบถูกหลังจากที่เคยผิดมา (บังคับพิมพ์แก้)
                     const wordToReinsert = vocabQueue.shift();
                     const insertIndex = Math.min(4, vocabQueue.length);
                     vocabQueue.splice(insertIndex, 0, wordToReinsert);
@@ -295,10 +287,9 @@
                 setTimeout(() => {
                     submitBtn.disabled = false;
                     loadNextWord();
-                }, 1200);
+                }, 700);
 
             } else {
-                // กรณีตอบผิด
                 hasFailedCurrentWord = true;
                 isProcessing = true;
                 answerInputEl.disabled = true;
@@ -306,7 +297,6 @@
 
                 answerInputEl.parentElement.classList.add('shake');
                 
-                // ให้ยูสเซอร์พิมพ์แก้ข้อผิดพลาด เพื่อให้ผ่านข้อนี้ไปได้ (ช่วยเรื่องการจำ)
                 feedbackEl.innerHTML = `<span class="text-pink-500">ผิดจ้า! คำที่ถูกคือ: <strong>${currentWord.ch}</strong> (${currentWord.pinyin})</span><br><span class="text-xs text-slate-400 mt-1 inline-block">พิมพ์คำที่ถูกต้องเพื่อไปต่อ (คำนี้จะวนมาถามใหม่)</span>`;
                 feedbackEl.style.opacity = 1;
                 
